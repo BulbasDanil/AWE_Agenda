@@ -29,6 +29,22 @@ class ExampleAugmentOSApp extends TpaServer {
     return upcomingEvents[0]; // the next event
   }
 
+  protected getTodayEvents(icsData: string) {
+    const events = ical.parseICS(icsData);
+    const now = new Date();
+
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    const upcomingEvents = Object.values(events)
+      .filter((e: any) => e.type === 'VEVENT' && e.start && e.start >= startOfDay && e.start <= endOfDay)
+      .sort((a: any, b: any) => (a.start.getTime() - b.start.getTime()));
+
+    return upcomingEvents;
+  }
+
+  
+
   protected async onSession(session: TpaSession, sessionId: string, userId: string): Promise<void> {
 
     // Show welcome message
@@ -38,7 +54,7 @@ class ExampleAugmentOSApp extends TpaServer {
     // requires microphone permission to be set in the developer console
     const eventHandlers = [
       session.events.onTranscription((data) => {
-        if (data.isFinal && data.text?.toLowerCase().includes("agenda")) {
+        if (data.isFinal && data.text?.toLowerCase().includes("next")) {
 
           fetch(ICAL)
           .then(res => res.text())
@@ -52,6 +68,24 @@ class ExampleAugmentOSApp extends TpaServer {
           });
 
         }
+
+        else if (data.isFinal && data.text?.toLowerCase().includes("agenda")) {
+
+          fetch(ICAL)
+          .then(res => res.text())
+          .then(icsData => {
+            const todayEvents = this.getTodayEvents(icsData);
+            const message = todayEvents;
+            session.layouts.showTextWall(message, {
+              view: ViewType.MAIN,
+              durationMs: 4000 + message.length * 50
+            });
+            
+          });
+
+        }
+
+
       }),
 
       session.events.onGlassesBattery((data) => {
