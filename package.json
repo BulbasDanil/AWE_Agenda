@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@augmentos/sdk": "1.1.10",
+    "date-fns-tz": "^3.2.0",
     "express": "^4.21.2",
     "ical": "^0.8.0",
     "ws": "^8.18.1"
