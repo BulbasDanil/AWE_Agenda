@@ -13,6 +13,7 @@
   "dependencies": {
     "@augmentos/sdk": "1.1.10",
     "express": "^4.21.2",
+    "ical": "^0.8.0",
     "ws": "^8.18.1"
   },
   "devDependencies": {
