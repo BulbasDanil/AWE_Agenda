@@ -108,7 +108,7 @@ class ExampleAugmentOSApp extends TpaServer {
         else if (transcription.includes("clever") && transcription.includes("guy")) {
           session.layouts.showTextWall("Clever Guy is working for you", {
             view: ViewType.MAIN,
-            durationMs: 5000
+            durationMs: 7500
           });
 
           chatHistory += "\nUser said: " + transcription;
