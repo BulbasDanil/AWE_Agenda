@@ -13,6 +13,7 @@ const GEMINI_API = process.env.GEMINI_API ?? (() => { throw new Error('GEMINI_AP
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? (() => { throw new Error('GEMINI_MODEL is not set in .env file'); })();
 
 let chatHistory = "";
+let cleverGuyMode = false;
 
 class ExampleAugmentOSApp extends TpaServer {
 
@@ -61,6 +62,11 @@ class ExampleAugmentOSApp extends TpaServer {
     return text.replace(/```(?:json)?\s*|\s*```/g, '').trim();
   }
 
+  protected async resetCleverGuy(delay: number): Promise<void> {
+    await new Promise<void>(resolve => setTimeout(resolve, delay));
+    cleverGuyMode = false;
+  }
+
   
 
   protected async onSession(session: TpaSession, sessionId: string, userId: string): Promise<void> {
@@ -77,42 +83,16 @@ class ExampleAugmentOSApp extends TpaServer {
           
         let transcription = data.text?.toLowerCase()
 
-        if (transcription.includes("next") && transcription.includes("agenda")) {
-          fetch(ICAL)
-          .then(res => res.text())
-          .then(icsData => {
-            const nextEvent = this.getNextEvent(icsData);
-            session.layouts.showTextWall("Next event: \n" + nextEvent?.summary + " at " + nextEvent?.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), {
-              view: ViewType.MAIN,
-              durationMs: 7500
-            });
-            
-          });
+        if (transcription.includes("mira") || cleverGuyMode) {
+          cleverGuyMode = true;
+          this.resetCleverGuy(20000)
 
-        }
-
-        else if (transcription.includes("my") && transcription.includes("agenda")) {
-          fetch(ICAL)
-          .then(res => res.text())
-          .then(icsData => {
-            const todayEvents = this.getTodayEvents(icsData);
-            const message = todayEvents;
-            session.layouts.showTextWall(message, {
-              view: ViewType.MAIN,
-              durationMs: 4000 + message.length * 50
-            });
-            
-          });
-        }
-
-        else if (transcription.includes("clever") && transcription.includes("guy")) {
-          session.layouts.showTextWall("Clever Guy is working for you", {
+          session.layouts.showTextWall("Mira is thinking...", {
             view: ViewType.MAIN,
             durationMs: 7500
           });
 
           chatHistory += "\nUser said: " + transcription;
-
           const prompt = optionsPrompt();
 
           const load = {
@@ -163,6 +143,36 @@ class ExampleAugmentOSApp extends TpaServer {
               throw new Error('Gemini broke: ' + (err?.response?.data?.error?.message || err.message || 'Unknown error'));
           }
         }
+
+        else if (transcription.includes("next")) {
+          fetch(ICAL)
+          .then(res => res.text())
+          .then(icsData => {
+            const nextEvent = this.getNextEvent(icsData);
+            session.layouts.showTextWall("Next event: \n" + nextEvent?.summary + " at " + nextEvent?.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), {
+              view: ViewType.MAIN,
+              durationMs: 7500
+            });
+            
+          });
+
+        }
+
+        else if (transcription.includes("schedule")) {
+          fetch(ICAL)
+          .then(res => res.text())
+          .then(icsData => {
+            const todayEvents = this.getTodayEvents(icsData);
+            const message = todayEvents;
+            session.layouts.showTextWall(message, {
+              view: ViewType.MAIN,
+              durationMs: 4000 + message.length * 50
+            });
+            
+          });
+        }
+
+        
 
       }),
 
